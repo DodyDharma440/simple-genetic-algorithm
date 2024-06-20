@@ -69,17 +69,12 @@ function App() {
   const randomCitizenFromKeepers = useCallback(
     (gen: number) => {
       let newString = "";
-      const sources = [];
       for (let i = 0; i < targetStr.length; i++) {
         const source = getRandomInt(keep);
-        let character = population?.[gen - 1]?.[source]?.text?.substring(
-          i,
-          i + 1
-        );
+        let character = population?.[gen - 1]?.[source]?.text?.[i];
         if (Math.random() < mutationFactor) {
           character = makeId(1);
         }
-        sources.push(source);
         newString = newString + character;
       }
       return {
@@ -102,26 +97,22 @@ function App() {
 
   const scoreAtPopulationItem = useCallback(
     (text: string) => {
-      let longer = targetStr;
-      let shorter = text;
-      if (targetStr.length < text.length) {
-        longer = text;
-        shorter = targetStr;
-      }
+      const longer = targetStr;
+      const shorter = text;
+
       const longerLength = longer.length;
-      if (longerLength == 0) {
+      if (longerLength === 0) {
         return 1.0;
       }
-      const score =
-        (longerLength - charDiff(longer, shorter)) /
-        parseFloat(`${longerLength}`);
+
+      const score = (longerLength - charDiff(longer, shorter)) / longerLength;
       return Number(score.toFixed(2));
     },
     [targetStr]
   );
 
-  const scoreHandler = useCallback(
-    (population: IPopulation[][]) => {
+  const handleScore = useCallback(() => {
+    setPopulation((population) => {
       return population.map((item, index) => {
         if (index === currentGen) {
           return population[currentGen]
@@ -137,29 +128,19 @@ function App() {
         }
         return item;
       });
-    },
-    [currentGen, scoreAtPopulationItem]
-  );
+    });
+  }, [currentGen, scoreAtPopulationItem]);
 
-  const pruneHandler = useCallback(
-    (population: IPopulation[][]) => {
+  const handlePrune = useCallback(() => {
+    setPopulation((population: IPopulation[][]) => {
       return population.map((items, index) => {
         if (index === currentGen) {
           return items.slice(0, keep);
         }
         return items;
       });
-    },
-    [currentGen, keep]
-  );
-
-  const handleScore = useCallback(() => {
-    setPopulation(scoreHandler);
-  }, [scoreHandler]);
-
-  const handlePrune = useCallback(() => {
-    setPopulation(pruneHandler);
-  }, [pruneHandler]);
+    });
+  }, [currentGen, keep]);
 
   const handleBreed = useCallback(() => {
     setCurrentGen((prevGen) => {
@@ -172,6 +153,7 @@ function App() {
         prevPop[prevGen + 1] = initialPopulation;
         return prevPop;
       });
+
       return prevGen + 1;
     });
   }, [populationSize, randomCitizenFromKeepers]);
@@ -190,7 +172,6 @@ function App() {
 
   useEffect(() => {
     if (autoRunMode) {
-      console.log("🚀 ~ useEffect ~ firstItemLastGen:", firstItemLastGen);
       if (firstItemLastGen !== targetStr) {
         handleCombine();
       } else {
